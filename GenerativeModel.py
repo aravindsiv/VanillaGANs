@@ -1,5 +1,4 @@
 import numpy as np
-import math
 
 class GenerativeModel:
 	def __init__(self,nn_input_dim,nn_hdim,nn_output_dim):
@@ -24,8 +23,7 @@ class GenerativeModel:
 		delta3=loss*out*(1-out)
 		dW2=(self.a1.T).dot(delta3)
 		db2=np.sum(delta3,axis=0,keepdims=True)
-		print np.where(self.z1>0,self.W2,np.zeros_like(self.W2)).shape
-		delta2= delta3.dot(np.where(self.z1>0,self.W2,np.zeros_like(self.W2)))
+		delta2= np.where(self.z1>0,np.dot(delta3,self.W2.T),np.zeros_like(self.z1))
 		dW1=np.dot(X.T,delta2)
 		db1=np.sum(delta2,axis=0)
 

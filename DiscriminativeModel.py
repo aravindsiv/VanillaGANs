@@ -39,10 +39,10 @@ class DiscriminativeModel:
 
 		self.dX = np.dot(delta2,self.W1.T)
 
-		self.W1 += learning_rate * dW1
-		self.b1 += learning_rate * db1
-		self.W2 += learning_rate * dW2
-		self.b2 += learning_rate * db2
+		self.W1 -= learning_rate * dW1
+		self.b1 -= learning_rate * db1
+		self.W2 -= learning_rate * dW2
+		self.b2 -= learning_rate * db2
 
 	def backward_pass_for_generator(self,X):
 		# Backward pass for the generator
@@ -60,11 +60,10 @@ class DiscriminativeModel:
 
 		return dX
 
-
 	def calculate_loss(self,x,x_fake):
-		num_examples = len(x)
-		probs = self.predict(x)
-		probs_fake = self.predict(x_fake)
+		num_examples = x.shape[0]
+		probs = self.forward_pass(x)
+		probs_fake = self.forward_pass(x_fake)
 		correct_logprobs = np.log(probs[:,1])+np.log(probs_fake[:,1])
 		data_loss = np.sum(correct_logprobs)
 		return 1./num_examples * data_loss

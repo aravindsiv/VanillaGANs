@@ -10,12 +10,14 @@ images_fname = "test_data.pkl"
 with open(images_fname,'r') as f:
 	images = pkl.load(f)
 
+print "Images loaded!"
+
 images = images/255.0 # A little bit of housekeeping to keep the input values between 0 and 1.
 
 N = images.shape[0] # No. of training examples
 k = 1 # How many times per training iteration should we update the discriminator?
 m = 16 # What is the size of the minibatch of samples?
-num_iters = 1
+num_iters = 10000
 nn_input_dim_dis = nn_output_dim_gen = images.shape[1]*images.shape[2] 
 nn_input_dim_gen = 10 
 nn_hdim_gen = nn_hdim_dis = 100
@@ -40,6 +42,7 @@ Generator = GenerativeModel(nn_input_dim_gen,nn_hdim_gen,nn_output_dim_gen)
 learning_rate = 0.05
 
 for i in range(num_iters):
+	print "Iteration " + str(i+1)
 	for j in range(k):
 		# Sample minibatch of m noise samples from noise prior
 		prior_z = np.random.normal(size=(m,nn_input_dim_gen))
@@ -56,3 +59,7 @@ for i in range(num_iters):
 	generator_outputs = Generator.forward_pass(prior_z)
 	Generator.backward_pass(learning_rate,generator_outputs,Discriminator.backward_pass_for_generator(generator_outputs),prior_z)
 	# print "Generator loss is " + str(Generator.calculate_loss(generator_outputs))
+
+prior_z = np.random.normal(size=(1,nn_input_dim_gen))
+rand_output = Generator.forward_pass(prior_z)
+plot_mnist_image(255.0*rand_output.reshape(images.shape[1],images.shape[2]))
