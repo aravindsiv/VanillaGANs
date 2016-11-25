@@ -32,6 +32,10 @@ class GenerativeModel:
 		self.W2 += -learning_rate * dW2
 		self.b2 += -learning_rate * db2
 
-	def calculate_loss(self,x):
-		pass
+	def calculate_loss(self,discriminator_outputs):
+		num_examples = discriminator_outputs.shape[0]
+		correct_logprobs = np.log(discriminator_outputs[:,1])
+		data_loss = np.sum(correct_logprobs)
+		return 1./num_examples * data_loss
+
 		

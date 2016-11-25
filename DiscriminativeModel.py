@@ -19,12 +19,6 @@ class DiscriminativeModel:
 		self.probs = exp_scores / np.sum(exp_scores,axis=1,keepdims=True)
 		return self.probs
 
-	def predict(self,probs):
-		# Predict an output:
-		# - 0 if the data was drawn from the generative model
-		# - 1 if the data was drawn from the data distribution
-		return np.argmax(probs,axis=1)
-
 	def backward_pass(self, learning_rate, X):
 		# Backpropagation
 		probs = self.forward_pass(X)
@@ -37,15 +31,14 @@ class DiscriminativeModel:
 		dW1 = np.dot(X.T,delta2)
 		db1 = np.sum(delta2,axis=0)
 
-		self.dX = np.dot(delta2,self.W1.T)
-
 		self.W1 -= learning_rate * dW1
 		self.b1 -= learning_rate * db1
 		self.W2 -= learning_rate * dW2
 		self.b2 -= learning_rate * db2
 
 	def backward_pass_for_generator(self,X):
-		# Backward pass for the generator
+		# Helper function to backpropagate the loss through the discriminator network without updating its weights
+		# Returns the loss at the output layer of the generator
 		probs = self.forward_pass(X)
 		delta3 = probs
 		loss = np.ones((X.shape[0],1)) 

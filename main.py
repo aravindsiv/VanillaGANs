@@ -62,7 +62,8 @@ for i in range(num_iters):
 	# Update the generator by descending its stochastic gradient
 	generator_outputs = Generator.forward_pass(prior_z)
 	Generator.backward_pass(learning_rate,generator_outputs,Discriminator.backward_pass_for_generator(generator_outputs),prior_z)
-	# print "Generator loss is " + str(Generator.calculate_loss(generator_outputs))
+	discriminator_outputs = Discriminator.forward_pass(generator_outputs)
+	print "Generator loss is " + str(Generator.calculate_loss(discriminator_outputs))
 	if (i % 100 == 0):
 		prior_z = np.random.normal(size=(1,nn_input_dim_gen))
 		rand_output = Generator.forward_pass(prior_z)
