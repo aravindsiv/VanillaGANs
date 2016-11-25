@@ -8,14 +8,16 @@ class DiscriminativeModel:
 		self.b1 = np.zeros((1,nn_hdim))
 		self.W2 = np.random.randn(nn_hdim, nn_output_dim) / np.sqrt(nn_hdim)
 		self.b2 = np.zeros((1,nn_output_dim))
+		self.z1 = self.a1 = self.z2 = self.probs = self.dX =  None
 
 	def forward_pass(self,X):
 		# Forward propogation
 		self.z1 = np.dot(X, self.W1) + self.b1
-		self.a1 = np.tanh(z1)
-		self.z2 = np.dot(a1,self.W2) + self.b2
-		exp_scores = np.exp(z2)
-		self.probs = exp_scores / np.sum(exp_scores,axis=1)
+		self.a1 = np.tanh(self.z1)
+		self.z2 = np.dot(self.a1,self.W2) + self.b2
+		exp_scores = np.exp(self.z2)
+		self.probs = exp_scores / np.sum(exp_scores,axis=1,keepdims=True)
+		return self.probs
 
 	def predict(self,probs):
 		# Predict an output:
@@ -23,16 +25,20 @@ class DiscriminativeModel:
 		# - 1 if the data was drawn from the data distribution
 		return np.argmax(probs,axis=1)
 
-	def backward_pass(self, learning_rate, x, x_fake probs, probs_fake):
+	def backward_pass(self, learning_rate, x, x_fake):
 		# Backpropagation
+		probs = self.forward_pass(x)
+		probs_fake = self.forward_pass(x_fake)
 		delta3 = np.vstack([probs,probs_fake])
 		loss = np.vstack([np.ones_like(probs),np.zeros_like(probs_fake)])
 		delta3 -= loss
-		dW2 = np.dot(a1.T,delta3)
+		dW2 = np.dot(self.a1.T,delta3)
 		db2 = np.sum(delta3,axis=0)
-		delta2 = np.dot(delta3,W2.T) * (1-np.power(self.a1,2))
+		delta2 = np.dot(delta3,self.W2.T) * (1-np.power(self.a1,2))
 		dW1 = np.dot(np.vstack([x,x_fake]),delta2)
 		db1 = np.sum(delta2,axis=0)
+
+		self.dX1 = np.dot(self.W1.T,delta2)
 
 		self.W1 += learning_rate * dW1
 		self.b1 += learning_rate * db1
