@@ -11,7 +11,7 @@ class DiscriminativeModel:
 		self.z1 = self.a1 = self.z2 = self.probs = self.dX =  None
 
 	def forward_pass(self,X):
-		# Forward propogation
+		# Forward propagation
 		self.z1 = np.dot(X, self.W1) + self.b1
 		self.a1 = np.tanh(self.z1)
 		self.z2 = np.dot(self.a1,self.W2) + self.b2
@@ -25,25 +25,41 @@ class DiscriminativeModel:
 		# - 1 if the data was drawn from the data distribution
 		return np.argmax(probs,axis=1)
 
-	def backward_pass(self, learning_rate, x, x_fake):
+	def backward_pass(self, learning_rate, X):
 		# Backpropagation
-		probs = self.forward_pass(x)
-		probs_fake = self.forward_pass(x_fake)
-		delta3 = np.vstack([probs,probs_fake])
-		loss = np.vstack([np.ones_like(probs),np.zeros_like(probs_fake)])
+		probs = self.forward_pass(X)
+		delta3 = probs
+		loss = np.vstack([np.ones((X.shape[0]/2,1)),np.zeros((X.shape[0]/2,1))])
 		delta3 -= loss
 		dW2 = np.dot(self.a1.T,delta3)
 		db2 = np.sum(delta3,axis=0)
 		delta2 = np.dot(delta3,self.W2.T) * (1-np.power(self.a1,2))
-		dW1 = np.dot(np.vstack([x,x_fake]),delta2)
+		dW1 = np.dot(X.T,delta2)
 		db1 = np.sum(delta2,axis=0)
 
-		self.dX1 = np.dot(self.W1.T,delta2)
+		self.dX = np.dot(delta2,self.W1.T)
 
 		self.W1 += learning_rate * dW1
 		self.b1 += learning_rate * db1
 		self.W2 += learning_rate * dW2
 		self.b2 += learning_rate * db2
+
+	def backward_pass_for_generator(self,X):
+		# Backward pass for the generator
+		probs = self.forward_pass(X)
+		delta3 = probs
+		loss = np.ones((X.shape[0],1)) 
+		delta3 -= loss
+		dW2 = np.dot(self.a1.T,delta3)
+		db2 = np.sum(delta3,axis=0)
+		delta2 = np.dot(delta3,self.W2.T) * (1-np.power(self.a1,2))
+		dW1 = np.dot(X.T,delta2)
+		db1 = np.sum(delta2,axis=0)
+
+		dX = np.dot(delta2,self.W1.T)
+
+		return dX
+
 
 	def calculate_loss(self,x,x_fake):
 		num_examples = len(x)

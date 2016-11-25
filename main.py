@@ -47,8 +47,12 @@ for i in range(num_iters):
 		# Sample minibatch of m examples from data generating distribution
 		x = get_minibatch(images,m)
 		# Update the discriminator by ascending its stochastic gradient
-		Discriminator.backward_pass(learning_rate,x,z)
+		Discriminator.backward_pass(learning_rate,np.vstack([x,z]))
+		# print "Discriminator loss is " + str(Discriminator.calculate_loss(x,z))
 	# Sample minibatch of m noise samples from noise prior
 	prior_z = np.random.normal(size=(m,nn_input_dim_gen))
 	z = Generator.forward_pass(prior_z)
 	# Update the generator by descending its stochastic gradient
+	generator_outputs = Generator.forward_pass(prior_z)
+	Generator.backward_pass(learning_rate,generator_outputs,Discriminator.backward_pass_for_generator(generator_outputs),prior_z)
+	# print "Generator loss is " + str(Generator.calculate_loss(generator_outputs))
