@@ -21,7 +21,7 @@ images = images/255.0 # A little bit of housekeeping to keep the input values be
 N = images.shape[0] # No. of training examples
 k = 1 # How many times per training iteration should we update the discriminator?
 m = 16 # What is the size of the minibatch of samples?
-num_iters = 10000
+num_iters = 1000
 nn_input_dim_dis = nn_output_dim_gen = images.shape[1]*images.shape[2] 
 nn_input_dim_gen = 100 
 nn_hdim_gen = nn_hdim_dis = 320
@@ -47,6 +47,7 @@ loss_discriminator = []
 loss_generator = []
 
 learning_rate = 5e-4
+momentum = 0.5
 
 for i in range(num_iters):
 	print "Iteration " + str(i+1)
@@ -57,14 +58,14 @@ for i in range(num_iters):
 		# Sample minibatch of m examples from data generating distribution
 		x = get_minibatch(images,m)
 		# Update the discriminator by ascending its stochastic gradient
-		Discriminator.backward_pass(learning_rate,np.vstack([x,z]))
+		Discriminator.backward_pass(learning_rate,momentum,np.vstack([x,z]))
 		loss_discriminator.append(Discriminator.calculate_loss(x,z))
 	# Sample minibatch of m noise samples from noise prior
 	prior_z = np.random.normal(size=(m,nn_input_dim_gen))
 	z = Generator.forward_pass(prior_z)
 	# Update the generator by descending its stochastic gradient
 	generator_outputs = Generator.forward_pass(prior_z)
-	Generator.backward_pass(learning_rate,generator_outputs,Discriminator.backward_pass_for_generator(generator_outputs),prior_z)
+	Generator.backward_pass(learning_rate,momentum,generator_outputs,Discriminator.backward_pass_for_generator(generator_outputs),prior_z)
 	discriminator_outputs = Discriminator.forward_pass(generator_outputs)
 	loss_generator.append(Generator.calculate_loss(discriminator_outputs))
 	# if (i % 100 == 0):
