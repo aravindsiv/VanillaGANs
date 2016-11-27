@@ -26,7 +26,7 @@ class GenerativeModel:
 		self.out = 1/(1+np.exp(-self.z2))
 		return self.out
 
-	def backward_pass(self, learning_rate, momentum, out, loss, X):
+	def backward_pass(self, learning_rate, momentum, momentum_training, out, loss, X):
 		# Backpropagation
 		delta3=loss*out*(1-out)
 		dW2=(self.a1.T).dot(delta3)
@@ -35,27 +35,27 @@ class GenerativeModel:
 		dW1=np.dot(X.T,delta2)
 		db1=np.sum(delta2,axis=0)
 
-		self.v_previous_W1 = self.v_W1
-		self.v_previous_b1 = self.v_b1
-		self.v_previous_W2 = self.v_W2
-		self.v_previous_b2 = self.v_b2
+		if(momentum_training==True):
+			self.v_previous_W1 = self.v_W1
+			self.v_previous_b1 = self.v_b1
+			self.v_previous_W2 = self.v_W2
+			self.v_previous_b2 = self.v_b2
 
-		self.v_W1 = momentum * self.v_W1 - learning_rate * dW1
-		self.v_b1 = momentum * self.v_b1 - learning_rate * db1
-		self.v_W2 = momentum * self.v_W2 - learning_rate * dW2
-		self.v_b2 = momentum * self.v_b2 - learning_rate * db2
+			self.v_W1 = momentum * self.v_W1 - learning_rate * dW1
+			self.v_b1 = momentum * self.v_b1 - learning_rate * db1
+			self.v_W2 = momentum * self.v_W2 - learning_rate * dW2
+			self.v_b2 = momentum * self.v_b2 - learning_rate * db2
 
-		self.W1 += -momentum * self.v_previous_W1 + (1 + momentum) * self.v_W1
-		self.b1 += -momentum * self.v_previous_b1 + (1 + momentum) * self.v_b1
-		self.W2 += -momentum * self.v_previous_W2 + (1 + momentum) * self.v_W2
-		self.b2 += -momentum * self.v_previous_b2 + (1 + momentum) * self.v_b2
+			self.W1 += -momentum * self.v_previous_W1 + (1 + momentum) * self.v_W1
+			self.b1 += -momentum * self.v_previous_b1 + (1 + momentum) * self.v_b1
+			self.W2 += -momentum * self.v_previous_W2 + (1 + momentum) * self.v_W2
+			self.b2 += -momentum * self.v_previous_b2 + (1 + momentum) * self.v_b2
 
-		'''
-		self.W1 += -learning_rate * dW1
-		self.b1 += -learning_rate * db1
-		self.W2 += -learning_rate * dW2
-		self.b2 += -learning_rate * db2
-		'''
+		else:
+			self.W1 += -learning_rate * dW1
+			self.b1 += -learning_rate * db1
+			self.W2 += -learning_rate * dW2
+			self.b2 += -learning_rate * db2
 
 	def calculate_loss(self,discriminator_outputs):
 		num_examples = discriminator_outputs.shape[0]

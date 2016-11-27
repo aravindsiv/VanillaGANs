@@ -27,7 +27,7 @@ class DiscriminativeModel:
 		self.probs = exp_scores / np.sum(exp_scores,axis=1,keepdims=True)
 		return self.probs
 
-	def backward_pass(self, learning_rate, momentum, X):
+	def backward_pass(self, learning_rate, momentum, mometum_training, X):
 		# Backpropagation
 		probs = self.forward_pass(X)
 		delta3 = probs
@@ -39,27 +39,27 @@ class DiscriminativeModel:
 		dW1 = np.dot(X.T,delta2)
 		db1 = np.sum(delta2,axis=0)
 
-		self.v_previous_W1 = self.v_W1
-		self.v_previous_b1 = self.v_b1
-		self.v_previous_W2 = self.v_W2
-		self.v_previous_b2 = self.v_b2
+		if(mometum_training==True):
+			self.v_previous_W1 = self.v_W1
+			self.v_previous_b1 = self.v_b1
+			self.v_previous_W2 = self.v_W2
+			self.v_previous_b2 = self.v_b2
 
-		self.v_W1 = momentum * self.v_W1 - learning_rate * dW1
-		self.v_b1 = momentum * self.v_b1 - learning_rate * db1
-		self.v_W2 = momentum * self.v_W2 - learning_rate * dW2
-		self.v_b2 = momentum * self.v_b2 - learning_rate * db2
+			self.v_W1 = momentum * self.v_W1 - learning_rate * dW1
+			self.v_b1 = momentum * self.v_b1 - learning_rate * db1
+			self.v_W2 = momentum * self.v_W2 - learning_rate * dW2
+			self.v_b2 = momentum * self.v_b2 - learning_rate * db2
 
-		self.W1 += -momentum * self.v_previous_W1 + (1 + momentum) * self.v_W1
-		self.b1 += -momentum * self.v_previous_b1 + (1 + momentum) * self.v_b1
-		self.W2 += -momentum * self.v_previous_W2 + (1 + momentum) * self.v_W2
-		self.b2 += -momentum * self.v_previous_b2 + (1 + momentum) * self.v_b2
+			self.W1 += -momentum * self.v_previous_W1 + (1 + momentum) * self.v_W1
+			self.b1 += -momentum * self.v_previous_b1 + (1 + momentum) * self.v_b1
+			self.W2 += -momentum * self.v_previous_W2 + (1 + momentum) * self.v_W2
+			self.b2 += -momentum * self.v_previous_b2 + (1 + momentum) * self.v_b2
 
-		'''
-		self.W1 -= learning_rate * dW1
-		self.b1 -= learning_rate * db1
-		self.W2 -= learning_rate * dW2
-		self.b2 -= learning_rate * db2
-		'''
+		else:
+			self.W1 -= learning_rate * dW1
+			self.b1 -= learning_rate * db1
+			self.W2 -= learning_rate * dW2
+			self.b2 -= learning_rate * db2
 
 	def backward_pass_for_generator(self,X):
 		# Helper function to backpropagate the loss through the discriminator network without updating its weights
@@ -85,4 +85,3 @@ class DiscriminativeModel:
 		correct_logprobs = np.log(probs[:,1])+np.log(probs_fake[:,1])
 		data_loss = np.sum(correct_logprobs)
 		return 1./num_examples * data_loss
-
