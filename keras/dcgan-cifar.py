@@ -1,7 +1,5 @@
 import os,random
 import numpy as np
-import theano as th
-import theano.tensor as T
 from keras.utils import np_utils
 import keras.models as models
 from keras.models import Sequential
@@ -12,7 +10,6 @@ from keras.activations import *
 from keras.layers.wrappers import TimeDistributed
 from keras.layers.noise import GaussianNoise
 from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D, UpSampling2D
-from keras.layers.recurrent import LSTM
 from keras.regularizers import *
 from keras.layers.normalization import *
 from keras.optimizers import *
@@ -34,22 +31,30 @@ img_channels = 3
 train_with = 0
 
 # the data, shuffled and split between train and test sets
-(X_train, y_train), (X_test, y_test) = cifar10.load_data()
+(X_train, y_train), (X_test, y_test) = keras.datasets.cifar10.load_data()
 
-X_train = X_train[np.where(y_train == train_with)[0]]
-print "X train shape",X_train.shape
-X_train = X_train.reshape(X_train.shape[0], img_channels, img_rows, img_cols)
-X_test = X_test.reshape(X_test.shape[0], img_channels, img_rows, img_cols)
-X_train = X_train.astype('float32')
-X_test = X_test.astype('float32')
-X_train /= 255
-X_test /= 255
+print X_train.shape
 
-print np.min(X_train), np.max(X_train)
+train_label = np.random.choice(range(10))
 
-print('X_train shape:', X_train.shape)
-print(X_train.shape[0], 'train samples')
-print(X_test.shape[0], 'test samples')
+X_train = X_train[np.where(y_train == train_with)[0]].astype('float32')/255
+
+num_exs, img_rows, img_cols, img_channels = X_train.shape
+
+# X_train = X_train.reshape((num_exs,img_rows,img_cols,img_channels))
+
+def plot_image(image):
+   '''Helper function to plot an MNIST image.'''
+   fig = plt.figure()
+   ax = fig.add_subplot(1, 1, 1)
+   # image = np.reshape(image, (32,32,3), order='F')
+   plt.imshow(image)
+   plt.xticks(np.array([]))
+   plt.yticks(np.array([]))
+   plt.show()
+
+# for i in np.random.choice(range(num_exs),10):
+#    plot_image(X_train[i])
 
 def make_trainable(net, val):
     net.trainable = val
@@ -58,7 +63,7 @@ def make_trainable(net, val):
 
 shp = X_train.shape[1:]
 print "Shape is:",shp
-dropout_rate = 0.25
+dropout_rate = 0.5
 opt = Adam(lr=1e-4)
 dopt = Adam(lr=1e-3)
 
@@ -68,7 +73,7 @@ g_input = Input(shape=[100])
 H = Dense(nch*16*16, init='glorot_normal')(g_input)
 H = BatchNormalization(mode=2)(H)
 H = Activation('relu')(H)
-H = Reshape( [nch, 16, 16] )(H)
+H = Reshape( [16, 16, nch] )(H)
 H = UpSampling2D(size=(2, 2))(H)
 H = Convolution2D(nch/2, 3, 3, border_mode='same', init='glorot_uniform')(H)
 H = BatchNormalization(mode=2)(H)
@@ -80,6 +85,7 @@ H = Convolution2D(3, 1, 1, border_mode='same', init='glorot_uniform')(H)
 g_V = Activation('sigmoid')(H)
 generator = Model(g_input,g_V)
 generator.compile(loss='binary_crossentropy', optimizer=opt)
+generator.summary()
 
 
 # Build Discriminative model ...
@@ -105,12 +111,13 @@ generator.compile(loss='binary_crossentropy', optimizer=opt)
 # discriminator.add(Dropout(0.5))
 # discriminator.add(Dense(10))
 # discriminator.add(Activation('softmax'))
+print "shape is",shp
 d_input = Input(shape=shp)
-H = Convolution2D(32, 3, 3, subsample=(2, 2), border_mode = 'same', activation='relu')(d_input)
-H = LeakyReLU(0.2)(H)
+H = Convolution2D(32, 3, 3, border_mode = 'same', activation='relu')(d_input)
+# H = LeakyReLU(0.2)(H)
 H = Dropout(dropout_rate)(H)
-H = Convolution2D(64, 3, 3, subsample=(2, 2), border_mode = 'same', activation='relu')(H)
-H = LeakyReLU(0.2)(H)
+H = Convolution2D(32, 3, 3, border_mode = 'same', activation='relu')(H)
+# H = LeakyReLU(0.2)(H)
 H = Dropout(dropout_rate)(H)
 H = Flatten()(H)
 H = Dense(32)(H)
@@ -119,6 +126,7 @@ H = Dropout(dropout_rate)(H)
 d_V = Dense(2,activation='softmax')(H)
 discriminator = Model(d_input,d_V)
 discriminator.compile(loss='categorical_crossentropy', optimizer=dopt)
+discriminator.summary()
 
 # Freeze weights in the discriminator for stacked training
 def make_trainable(net, val):
@@ -133,7 +141,6 @@ H = generator(gan_input)
 gan_V = discriminator(H)
 GAN = Model(gan_input, gan_V)
 GAN.compile(loss='categorical_crossentropy', optimizer=opt)
-GAN.summary()
 
 def plot_loss(losses):
 #        display.clear_output(wait=True)
@@ -144,26 +151,16 @@ def plot_loss(losses):
         plt.legend()
         plt.show()
 
-def plot_mnist_image(image):
-    '''Helper function to plot an MNIST image.'''
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    print "Shape of image is:",image.shape
-    image = np.reshape(image, (32,32,3), order='F')
-    #ax.matshow(image, cmap = matplotlib.cm.binary)
-    plt.imshow(image)
-    plt.xticks(np.array([]))
-    plt.yticks(np.array([]))
-    plt.show()
+plot_image(X_train[0])
 
 def plot_gen(n_ex=16,dim=(4,4), figsize=(10,10) ):
     noise = np.random.uniform(0,1,size=[n_ex,100])
     generated_images = generator.predict(noise)
 
-    plot_mnist_image(generated_images[0])
+    plot_image(generated_images[0])
 
 
-ntrain = 500
+ntrain = 256
 trainidx = random.sample(range(0,X_train.shape[0]), ntrain)
 XT = X_train[trainidx,:,:,:]
 
