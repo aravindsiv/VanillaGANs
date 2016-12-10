@@ -1,6 +1,4 @@
 import os,random
-#os.environ["KERAS_BACKEND"] = "theano"
-#os.environ["THEANO_FLAGS"]  = "device=gpu%d,lib.cnmem=0"%(random.randint(0,3))
 import numpy as np
 import theano as th
 import theano.tensor as T
@@ -33,11 +31,13 @@ img_rows, img_cols = 32, 32
 
 img_channels = 3
 
+train_with = 0
+
 # the data, shuffled and split between train and test sets
 (X_train, y_train), (X_test, y_test) = cifar10.load_data()
 
+X_train = X_train[np.where(y_train == train_with)[0]]
 print "X train shape",X_train.shape
-
 X_train = X_train.reshape(X_train.shape[0], img_channels, img_rows, img_cols)
 X_test = X_test.reshape(X_test.shape[0], img_channels, img_rows, img_cols)
 X_train = X_train.astype('float32')
@@ -80,7 +80,6 @@ H = Convolution2D(3, 1, 1, border_mode='same', init='glorot_uniform')(H)
 g_V = Activation('sigmoid')(H)
 generator = Model(g_input,g_V)
 generator.compile(loss='binary_crossentropy', optimizer=opt)
-generator.summary()
 
 
 # Build Discriminative model ...
@@ -120,7 +119,6 @@ H = Dropout(dropout_rate)(H)
 d_V = Dense(2,activation='softmax')(H)
 discriminator = Model(d_input,d_V)
 discriminator.compile(loss='categorical_crossentropy', optimizer=dopt)
-discriminator.summary()
 
 # Freeze weights in the discriminator for stacked training
 def make_trainable(net, val):
@@ -150,6 +148,7 @@ def plot_mnist_image(image):
     '''Helper function to plot an MNIST image.'''
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
+    print "Shape of image is:",image.shape
     image = np.reshape(image, (32,32,3), order='F')
     #ax.matshow(image, cmap = matplotlib.cm.binary)
     plt.imshow(image)
@@ -161,10 +160,10 @@ def plot_gen(n_ex=16,dim=(4,4), figsize=(10,10) ):
     noise = np.random.uniform(0,1,size=[n_ex,100])
     generated_images = generator.predict(noise)
 
-    plot_mnist_image(generated_images)
+    plot_mnist_image(generated_images[0])
 
 
-ntrain = 10000
+ntrain = 500
 trainidx = random.sample(range(0,X_train.shape[0]), ntrain)
 XT = X_train[trainidx,:,:,:]
 
@@ -178,7 +177,9 @@ y[:n,1] = 1
 y[n:,0] = 1
 
 make_trainable(discriminator,True)
+# discriminator.load_weights("discriminator")
 discriminator.fit(X,y, nb_epoch=1, batch_size=128)
+discriminator.save_weights("discriminator")
 y_hat = discriminator.predict(X)
 
 # Measure accuracy of pre-trained discriminator network
@@ -229,7 +230,7 @@ def train_for_n(nb_epoch=5000, plt_frq=25,BATCH_SIZE=32):
         
 
 # Train for 6000 epochs at original learning rates
-train_for_n(nb_epoch=50, plt_frq=500,BATCH_SIZE=32)
+train_for_n(nb_epoch=500, plt_frq=500,BATCH_SIZE=32)
 
 # Train for 2000 epochs at reduced learning rates
 # opt.lr.set_value(1e-5)
