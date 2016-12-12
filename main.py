@@ -13,7 +13,11 @@ with open(images_fname,'r') as f:
 
 print "Images loaded!"
 
+<<<<<<< Updated upstream
 train_with = 9
+=======
+train_with = 5
+>>>>>>> Stashed changes
 
 images = imgs/255.0
 # images = imgs[np.where(labels==train_with)[0]]/255.0 # A little bit of housekeeping to keep the input values between 0 and 1.
@@ -63,6 +67,7 @@ loss_generator = []
 
 learning_rate = 5e-4
 momentum = 0.5
+<<<<<<< Updated upstream
 momentum_training = False
 
 # Pre-train the discriminator
@@ -81,6 +86,9 @@ for j in range(num_epochs):
 # z = Generator.forward_pass(prior_z)
 # x = get_minibatch(images,m)
 # print "The discriminator achieved a loss of ", Discriminator.calculate_loss(x,z)
+=======
+momentum_training = True
+>>>>>>> Stashed changes
 
 for i in range(num_iters):
 	for j in range(k):
@@ -103,6 +111,7 @@ for i in range(num_iters):
 	z = Generator.forward_pass(prior_z)
 	discriminator_outputs = Discriminator.forward_pass(z)
 	loss_generator.append(Generator.calculate_loss(discriminator_outputs))
+<<<<<<< Updated upstream
 	if ((i+1) % 1 == 0):
 		print "Iteration " + str(i+1)
 		print "Generator loss is ",loss_generator[i]
@@ -114,6 +123,12 @@ for i in range(num_iters):
 prior_z = np.random.normal(size=(100,nn_input_dim_gen))
 rand_output = Generator.forward_pass(prior_z)
 plot_10_by_10_images(255.0*rand_output.reshape(100,images.shape[1],images.shape[2]))
+=======
+	if (i % 100 == 0):
+		prior_z = np.random.normal(size=(1,nn_input_dim_gen))
+		rand_output = Generator.forward_pass(prior_z)
+		plot_mnist_image(255.0*rand_output.reshape(images.shape[1],images.shape[2]))
+>>>>>>> Stashed changes
 
 plt.figure(figsize=(10,8))
 plt.plot(loss_discriminator, label='discriminitive loss')

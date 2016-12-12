@@ -19,7 +19,7 @@ from keras.datasets import cifar10
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 import seaborn as sns
-import cPickle, random, sys, keras
+import cPickle, random, sys
 from keras.models import Model
 from keras.utils import np_utils
 from tqdm import tqdm
@@ -31,7 +31,7 @@ img_channels = 3
 train_with = 3
 
 # the data, shuffled and split between train and test sets
-(X_train, y_train), (X_test, y_test) = keras.datasets.cifar10.load_data()
+(X_train, y_train), (X_test, y_test) = cifar10.load_data()
 
 print X_train.shape
 
@@ -104,7 +104,7 @@ def train_for_n(nb_epoch=5000, plt_frq=25,BATCH_SIZE=32):
         
         # Make generative images
         image_batch = X_train[np.random.randint(0,X_train.shape[0],size=BATCH_SIZE),:,:,:]    
-        noise_gen = np.random.uniform(0,1,size=[BATCH_SIZE,100])
+        noise_gen = np.random.normal(0,1,size=[BATCH_SIZE,100])
         generated_images = generator.predict(noise_gen)
         
         # Train discriminator on generated images
@@ -127,7 +127,7 @@ def train_for_n(nb_epoch=5000, plt_frq=25,BATCH_SIZE=32):
         losses["g"].append(g_loss)
         
         if e%1000==0:
-            GAN.save_weights("GAN_weights_"+str(e))
+            GAN.save_weights("GAN_weights_new_"+str(e))
 
         # Updates plots
         # if e%plt_frq==plt_frq-1:
@@ -186,9 +186,10 @@ H = generator(gan_input)
 gan_V = discriminator(H)
 GAN = Model(gan_input, gan_V)
 GAN.compile(loss='categorical_crossentropy', optimizer=opt)
+GAN.summary()
 
-if(os.path.isfile("GAN_weights")):
-    GAN.load_weights("GAN_weights")
+if(os.path.isfile("GAN_weights_9000")):
+    GAN.load_weights("GAN_weights_9000")
     plot_gen(100,(5,5),(12,12))
 
 ntrain = 256

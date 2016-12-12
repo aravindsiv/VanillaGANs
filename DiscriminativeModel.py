@@ -17,6 +17,18 @@ class DiscriminativeModel:
 		self.v_W2 = 0
 		self.v_b2 = 0
 
+	def calculate_loss(self,x,x_fake):
+		num_examples = x.shape[0]
+		probs = self.forward_pass(x)
+		probs_fake = self.forward_pass(x_fake)
+		correct_logprobs = np.log(probs[:,1])+np.log(probs_fake[:,1])
+		data_loss = np.sum(correct_logprobs)
+		return 1./num_examples * data_loss
+
+	#def gradient_check(self,x,eps=0.0001):
+	#	num_grad = (self.calculate_loss(x+eps*np.ones_like(x)) + self.calculate_loss(x - eps*np.ones_like(x))) / (2 * eps)
+	#	return num_grad
+
 	def forward_pass(self,X):
 		# Forward propagation
 		self.z1 = np.dot(X, self.W1) + self.b1
@@ -35,6 +47,8 @@ class DiscriminativeModel:
 		loss[0:X.shape[0]/2,0] = 1
 		loss[X.shape[0]/2:,1] = 1
 		delta3 -= loss
+	#	num_grad = self.gradient_check(X,x_fake)
+	#	print "Difference is:",delta3 - num_grad
 		dW2 = np.dot(self.a1.T,delta3)
 		db2 = np.sum(delta3,axis=0)
 		delta2 = np.dot(delta3,self.W2.T) * (1-np.power(self.a1,2))
@@ -80,10 +94,3 @@ class DiscriminativeModel:
 
 		return dX
 
-	def calculate_loss(self,x,x_fake):
-		num_examples = x.shape[0]
-		probs = self.forward_pass(x)
-		probs_fake = self.forward_pass(x_fake)
-		correct_logprobs = np.log(probs[:,1])+np.log(probs_fake[:,1])
-		data_loss = np.sum(correct_logprobs)
-		return 1./num_examples * data_loss
