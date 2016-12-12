@@ -3,7 +3,6 @@ import numpy as np
 class GenerativeModel:
 	def __init__(self,nn_input_dim,nn_hdim,nn_output_dim):
 		# Initialize the parameters to random values. We need to learn these.
-		np.random.seed(42)
 		self.W1 = np.random.randn(nn_input_dim, nn_hdim) / np.sqrt(nn_input_dim)
 		self.b1 = np.zeros((1,nn_hdim))
 		self.W2 = np.random.randn(nn_hdim, nn_output_dim) / np.sqrt(nn_hdim)
@@ -52,10 +51,10 @@ class GenerativeModel:
 			self.b2 += -momentum * self.v_previous_b2 + (1 + momentum) * self.v_b2
 
 		else:
-			self.W1 += -learning_rate * dW1
-			self.b1 += -learning_rate * db1
-			self.W2 += -learning_rate * dW2
-			self.b2 += -learning_rate * db2
+			self.W1 -= learning_rate * dW1
+			self.b1 -= learning_rate * db1
+			self.W2 -= learning_rate * dW2
+			self.b2 -= learning_rate * db2
 
 	def calculate_loss(self,discriminator_outputs):
 		num_examples = discriminator_outputs.shape[0]

@@ -3,7 +3,6 @@ import numpy as np
 class DiscriminativeModel:
 	def __init__(self,nn_input_dim,nn_hdim,nn_output_dim=2):
 		# Initialize the parameters to random values. We need to learn these.
-		np.random.seed(42)
 		self.W1 = np.random.randn(nn_input_dim, nn_hdim) / np.sqrt(nn_input_dim)
 		self.b1 = np.zeros((1,nn_hdim))
 		self.W2 = np.random.randn(nn_hdim, nn_output_dim) / np.sqrt(nn_hdim)
@@ -31,7 +30,10 @@ class DiscriminativeModel:
 		# Backpropagation
 		probs = self.forward_pass(X)
 		delta3 = probs
-		loss = np.vstack([np.ones((X.shape[0]/2,1)),np.zeros((X.shape[0]/2,1))])
+		# A decent(?) first attempt at formulating this complicated loss
+		loss = np.zeros((X.shape[0],2))
+		loss[0:X.shape[0]/2,0] = 1
+		loss[X.shape[0]/2:,1] = 1
 		delta3 -= loss
 		dW2 = np.dot(self.a1.T,delta3)
 		db2 = np.sum(delta3,axis=0)
