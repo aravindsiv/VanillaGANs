@@ -21,7 +21,7 @@ images = imgs/255.0
 N = images.shape[0] # No. of training examples
 k = 1 # How many times per training iteration should we update the discriminator?
 m = 256 # What is the size of the minibatch of samples?
-num_iters = 5000
+num_iters = 10000
 nn_input_dim_dis = nn_output_dim_gen = images.shape[1]*images.shape[2] 
 nn_input_dim_gen = 100 
 nn_hdim_gen = nn_hdim_dis = 320
@@ -63,24 +63,24 @@ loss_generator = []
 
 learning_rate = 5e-4
 momentum = 0.5
-momentum_training = True
+momentum_training = False
 
-# # Pre-train the discriminator
-# num_epochs = 100
-# for j in range(num_epochs):
-# 	# Sample minibatch of m noise samples from noise prior
-# 	prior_z = np.random.normal(size=(m,nn_input_dim_gen))
-# 	z = Generator.forward_pass(prior_z)
-# 	# Sample minibatch of m examples from data generating distribution
-# 	x = get_minibatch(images,m)
-# 	# Update the discriminator by ascending its stochastic gradient
-# 	Discriminator.backward_pass(learning_rate,momentum, momentum_training, np.vstack([x,z]))
+# Pre-train the discriminator
+num_epochs = 100
+for j in range(num_epochs):
+	# Sample minibatch of m noise samples from noise prior
+	prior_z = np.random.normal(size=(m,nn_input_dim_gen))
+	z = Generator.forward_pass(prior_z)
+	# Sample minibatch of m examples from data generating distribution
+	x = get_minibatch(images,m)
+	# Update the discriminator by ascending its stochastic gradient
+	Discriminator.backward_pass(learning_rate,momentum, momentum_training, np.vstack([x,z]))
 
-# print "Pre-training of discriminator finished!"
-prior_z = np.random.normal(size=(m,nn_input_dim_gen))
-z = Generator.forward_pass(prior_z)
-x = get_minibatch(images,m)
-print "The discriminator achieved a loss of ", Discriminator.calculate_loss(x,z)
+# # print "Pre-training of discriminator finished!"
+# prior_z = np.random.normal(size=(m,nn_input_dim_gen))
+# z = Generator.forward_pass(prior_z)
+# x = get_minibatch(images,m)
+# print "The discriminator achieved a loss of ", Discriminator.calculate_loss(x,z)
 
 for i in range(num_iters):
 	for j in range(k):
@@ -103,19 +103,25 @@ for i in range(num_iters):
 	z = Generator.forward_pass(prior_z)
 	discriminator_outputs = Discriminator.forward_pass(z)
 	loss_generator.append(Generator.calculate_loss(discriminator_outputs))
-	if ((i+1) % 1000 == 0):
+	if ((i+1) % 1 == 0):
 		print "Iteration " + str(i+1)
 		print "Generator loss is ",loss_generator[i]
 		print "Discriminator loss is ",loss_discriminator[i]
 		prior_z = np.random.normal(size=(100,nn_input_dim_gen))
 		rand_output = Generator.forward_pass(prior_z)
-		plot_10_by_10_images(255.0*rand_output.reshape(100,images.shape[1],images.shape[2]))
+		# plot_10_by_10_images(255.0*rand_output.reshape(100,images.shape[1],images.shape[2]))
 
 prior_z = np.random.normal(size=(100,nn_input_dim_gen))
 rand_output = Generator.forward_pass(prior_z)
 plot_10_by_10_images(255.0*rand_output.reshape(100,images.shape[1],images.shape[2]))
 
-plt.plot(loss_discriminator)
+plt.figure(figsize=(10,8))
+plt.plot(loss_discriminator, label='discriminitive loss')
+plt.plot(loss_generator, label='generative loss')
+plt.legend()
 plt.show()
-plt.plot(loss_generator)
-plt.show()
+
+# plt.plot(loss_discriminator)
+# plt.show()
+# plt.plot(loss_generator)
+# plt.show()
