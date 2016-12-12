@@ -1,4 +1,5 @@
 import os,random
+import os.path
 import numpy as np
 from keras.utils import np_utils
 import keras.models as models
@@ -20,7 +21,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import cPickle, random, sys, keras
 from keras.models import Model
-#from IPython import display
 from keras.utils import np_utils
 from tqdm import tqdm
 
@@ -28,7 +28,7 @@ img_rows, img_cols = 32, 32
 
 img_channels = 3
 
-train_with = 0
+train_with = 3
 
 # the data, shuffled and split between train and test sets
 (X_train, y_train), (X_test, y_test) = keras.datasets.cifar10.load_data()
@@ -61,6 +61,79 @@ def make_trainable(net, val):
     for l in net.layers:
         l.trainable = val
 
+def make_trainable(net, val):
+    net.trainable = val
+    for l in net.layers:
+        l.trainable = val
+
+def plot_10_by_10_images(images):
+   """ Plot 100 MNIST images in a 10 by 10 table. Note that we crop
+   the images so that they appear reasonably close together.  The
+   image is post-processed to give the appearance of being continued."""
+   fig = plt.figure()
+   # images = [image[3:25, 3:25] for image in images]
+   #image = np.concatenate(images, axis=1)
+   for x in range(10):
+       for y in range(10):
+           ax = fig.add_subplot(10, 10, 10*y+x+1)
+           plt.imshow(images[10*y+x])
+           plt.xticks(np.array([]))
+           plt.yticks(np.array([]))
+   plt.show()
+
+
+def plot_gen(n_ex=16,dim=(4,4), figsize=(10,10) ):
+    noise = np.random.uniform(0,1,size=[n_ex,100])
+    generated_images = generator.predict(noise)
+
+    plot_10_by_10_images(generated_images)
+
+def plot_loss(losses):
+#        display.clear_output(wait=True)
+#        display.display(plt.gcf())
+        plt.figure(figsize=(10,8))
+        plt.plot(losses["d"], label='discriminitive loss')
+        plt.plot(losses["g"], label='generative loss')
+        plt.legend()
+        plt.show()
+
+# Set up our main training loop
+def train_for_n(nb_epoch=5000, plt_frq=25,BATCH_SIZE=32):
+
+    for e in tqdm(range(nb_epoch)):  
+        
+        # Make generative images
+        image_batch = X_train[np.random.randint(0,X_train.shape[0],size=BATCH_SIZE),:,:,:]    
+        noise_gen = np.random.uniform(0,1,size=[BATCH_SIZE,100])
+        generated_images = generator.predict(noise_gen)
+        
+        # Train discriminator on generated images
+        X = np.concatenate((image_batch, generated_images))
+        y = np.zeros([2*BATCH_SIZE,2])
+        y[0:BATCH_SIZE,1] = 1
+        y[BATCH_SIZE:,0] = 1
+        
+        make_trainable(discriminator,True)
+        d_loss  = discriminator.train_on_batch(X,y)
+        losses["d"].append(d_loss)
+
+        # train Generator-Discriminator stack on input noise to non-generated output class
+        noise_tr = np.random.uniform(0,1,size=[BATCH_SIZE,100])
+        y2 = np.zeros([BATCH_SIZE,2])
+        y2[:,1] = 1
+        
+        make_trainable(discriminator,False)
+        g_loss = GAN.train_on_batch(noise_tr, y2 )
+        losses["g"].append(g_loss)
+        
+        if e%1000==0:
+            GAN.save_weights("GAN_weights_"+str(e))
+
+        # Updates plots
+        # if e%plt_frq==plt_frq-1:
+        #     plot_loss(losses)
+        #     plot_gen(100,(5,5),(12,12))
+
 shp = X_train.shape[1:]
 print "Shape is:",shp
 dropout_rate = 0.5
@@ -87,30 +160,6 @@ generator = Model(g_input,g_V)
 generator.compile(loss='binary_crossentropy', optimizer=opt)
 generator.summary()
 
-
-# Build Discriminative model ...
-# discriminator=Sequential()
-# discriminator.add(Convolution2D(32, 3, 3, border_mode='same',
-#                         input_shape=X_train.shape[1:]))
-# discriminator.add(Activation('relu'))
-# discriminator.add(Convolution2D(32, 3, 3))
-# discriminator.add(Activation('relu'))
-# discriminator.add(MaxPooling2D(pool_size=(2, 2)))
-# discriminator.add(Dropout(0.25))
-
-# discriminator.add(Convolution2D(64, 3, 3, border_mode='same'))
-# discriminator.add(Activation('relu'))
-# discriminator.add(Convolution2D(64, 3, 3))
-# discriminator.add(Activation('relu'))
-# discriminator.add(MaxPooling2D(pool_size=(2, 2)))
-# discriminator.add(Dropout(0.25))
-
-# discriminator.add(Flatten())
-# discriminator.add(Dense(512))
-# discriminator.add(Activation('relu'))
-# discriminator.add(Dropout(0.5))
-# discriminator.add(Dense(10))
-# discriminator.add(Activation('softmax'))
 print "shape is",shp
 d_input = Input(shape=shp)
 H = Convolution2D(32, 3, 3, border_mode = 'same', activation='relu')(d_input)
@@ -129,10 +178,6 @@ discriminator.compile(loss='categorical_crossentropy', optimizer=dopt)
 discriminator.summary()
 
 # Freeze weights in the discriminator for stacked training
-def make_trainable(net, val):
-    net.trainable = val
-    for l in net.layers:
-        l.trainable = val
 make_trainable(discriminator, False)
 
 # Build stacked GAN model
@@ -142,23 +187,9 @@ gan_V = discriminator(H)
 GAN = Model(gan_input, gan_V)
 GAN.compile(loss='categorical_crossentropy', optimizer=opt)
 
-def plot_loss(losses):
-#        display.clear_output(wait=True)
-#        display.display(plt.gcf())
-        plt.figure(figsize=(10,8))
-        plt.plot(losses["d"], label='discriminitive loss')
-        plt.plot(losses["g"], label='generative loss')
-        plt.legend()
-        plt.show()
-
-plot_image(X_train[0])
-
-def plot_gen(n_ex=16,dim=(4,4), figsize=(10,10) ):
-    noise = np.random.uniform(0,1,size=[n_ex,100])
-    generated_images = generator.predict(noise)
-
-    plot_image(generated_images[0])
-
+if(os.path.isfile("GAN_weights")):
+    GAN.load_weights("GAN_weights")
+    plot_gen(100,(5,5),(12,12))
 
 ntrain = 256
 trainidx = random.sample(range(0,X_train.shape[0]), ntrain)
@@ -189,45 +220,12 @@ acc = n_rig*100.0/n_tot
 print "Accuracy: %0.02f pct (%d of %d) right"%(acc, n_rig, n_tot)
 
 # set up loss storage vector
-losses = {"d":[], "g":[]}
-
-# Set up our main training loop
-def train_for_n(nb_epoch=5000, plt_frq=25,BATCH_SIZE=32):
-
-    for e in tqdm(range(nb_epoch)):  
-        
-        # Make generative images
-        image_batch = X_train[np.random.randint(0,X_train.shape[0],size=BATCH_SIZE),:,:,:]    
-        noise_gen = np.random.uniform(0,1,size=[BATCH_SIZE,100])
-        generated_images = generator.predict(noise_gen)
-        
-        # Train discriminator on generated images
-        X = np.concatenate((image_batch, generated_images))
-        y = np.zeros([2*BATCH_SIZE,2])
-        y[0:BATCH_SIZE,1] = 1
-        y[BATCH_SIZE:,0] = 1
-        
-        #make_trainable(discriminator,True)
-        d_loss  = discriminator.train_on_batch(X,y)
-        losses["d"].append(d_loss)
-    
-        # train Generator-Discriminator stack on input noise to non-generated output class
-        noise_tr = np.random.uniform(0,1,size=[BATCH_SIZE,100])
-        y2 = np.zeros([BATCH_SIZE,2])
-        y2[:,1] = 1
-        
-        #make_trainable(discriminator,False)
-        g_loss = GAN.train_on_batch(noise_tr, y2 )
-        losses["g"].append(g_loss)
-        
-        # Updates plots
-        if e%plt_frq==plt_frq-1:
-            plot_loss(losses)
-            plot_gen()
-        
+losses = {"d":[], "g":[]}        
 
 # Train for 6000 epochs at original learning rates
-train_for_n(nb_epoch=500, plt_frq=500,BATCH_SIZE=32)
+train_for_n(nb_epoch=10000, plt_frq=500,BATCH_SIZE=32)
+
+GAN.save_weights("GAN_weights")
 
 # Train for 2000 epochs at reduced learning rates
 # opt.lr.set_value(1e-5)
@@ -243,7 +241,7 @@ train_for_n(nb_epoch=500, plt_frq=500,BATCH_SIZE=32)
 plot_loss(losses)
 
 # Plot some generated images from our GAN
-plot_gen(25,(5,5),(12,12))
+plot_gen(100,(5,5),(12,12))
 
 # Plot real MNIST images for comparison
 #plot_real()
