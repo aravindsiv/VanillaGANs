@@ -61,5 +61,3 @@ class GenerativeModel:
 		correct_logprobs = np.log(discriminator_outputs[:,1])
 		data_loss = np.sum(correct_logprobs)
 		return 1./num_examples * data_loss
-
-		
