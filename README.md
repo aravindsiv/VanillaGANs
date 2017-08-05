@@ -1,4 +1,4 @@
-# CS674_Project
-Source code for the CS674: Mathematical Topics In AI &amp; Optimization (Fall 2016) at Rutgers.
+# VanillaGANs
+This code implements a vanilla GAN, as described in the original paper by [Goodfellow et al.](https://arxiv.org/abs/1406.2661). It implements both the generator and the discriminator as fully connected feedforward networks, without using any deep learning libraries like TensorFlow or Theano. Both implementations are heavily derived from [Denny Britz's excellent tutorial](http://www.wildml.com/2015/09/implementing-a-neural-network-from-scratch/). 
 
-This code is not very well maintained at the moment. Email the authors (aravind dot siva at rutgers dot edu) in case you run into some issues with the code, or create an Issue on GitHub, and the authors will get back to you. 
+This source code was originally developed as the final project for the course CS674: Mathematical Topics In AI &amp; Optimization (Fall 2016) at Rutgers.
